@@ -1,37 +1,31 @@
-local rshift = bit.rshift
-readMemory = memory.readdwordunsigned
 
-function mult32(a, b)
-  local higher = (rshift(a, 16)*(b%0x10000) + (a%0x10000)*rshift(b,16)) % 0x10000
-  local lower = (a % 0x10000)*(b % 0x10000)
-  return higher*0x10000 + lower
-end
+local Counter = {
+  new = function()
+    local obj = {}
+    obj.i = -1
+    obj.increment = function(self) self.i = self.i + 1 return self.i end
+    obj.reset = function(self) self.i = -1 end
+    return obj
+  end
+}
 
-function advance(seed)
-    seed = mult32(seed, 0x41C64E6D) + 0x6073
-    if seed > 0x80000000 then
-        local val = bit.bxor(seed, 0xFFFFFFFF) + 1
-        seed = 0 - val
-    end
-    return seed
-end
-function back(seed)
-    seed = mult32(seed, 0xeeb9eb65) + 0xa3561a1
-    if seed > 0x80000000 then
-        local val = bit.bxor(seed, 0xFFFFFFFF) + 1
-        seed = 0 - val
-    end
-    return seed
-end
+-- アドレスに対して呼び出し回数を記録しておく
+local counterList = {}
 
+-- 指定されたアドレスが実行されたときに、レジスタ `register` の値を `value` で上書きします。
+-- `value`の値として`"counter"`が渡された場合、アドレスが実行されるごとに加算されるカウンタの値で上書きします。
 function rewriteRegister(address, register, value, display) 
+  if counterList[address] == nil then counterList[address] = Counter.new() end
   return memory.registerexec(address, function()
+    if value == "counter" then value = counterList[address]:increment() end
     memory.setregister(register, value) 
     if display then print(string.format("rewrite $%.8x %s %x", address, register, value)) 
     end 
   end)
 end
 
+-- 指定されたアドレスが実行されたときにレジスタの状態をログに出力します。
+-- 第2引数が渡された場合は対応するレジスタのみを、渡されない場合は全てのレジスタの値を出力します。
 function noticeCall(address, register, radix)
   if register == nil then
     return memory.registerexec(address, function() 
@@ -46,3 +40,8 @@ function noticeCall(address, register, radix)
   local s = "$%.8x called %s:" .. radix
   return memory.registerexec(address, function() print(string.format(s, address, register, memory.getregister(register))) end)
 end
+
+return {
+  rewriteRegister = rewriteRegister,
+  noticeCall = noticeCall,
+}
