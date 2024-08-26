@@ -1,5 +1,9 @@
+local seedAddress = 0x03005AE0
+local rngSys = (require 'PkScript.RngSystem')(seedAddress)
+
 -- LCG呼び出しを監視してログ等に出力
 local logger = (require 'PkScript.Logger')()
+local addressDict = (require 'PkScript.AddressDict')("./PkScript/AddressList_Em.txt")
 local observeLcg = require 'PkScript.LcgObserver'
 observeLcg(0x0806f050, {
   exclude = {
@@ -7,8 +11,8 @@ observeLcg(0x0806f050, {
     0x080386ea, -- 戦闘消費
   },
   listeners = {
-    (require 'PkScript.LcgListeners.printToLog')(logger),
-    (require 'PkScript.LcgListeners.printToConsole'),
+    (require 'PkScript.LcgListeners.printToLog')(rngSys, logger),
+    (require 'PkScript.LcgListeners.printToConsole')(rngSys, addressDict),
   }
 })
 
@@ -36,7 +40,6 @@ cheat.encounter("none")
 -- その他、便利モジュール群
 local moveNames = require 'PkScript.moves.moveJP'
 local getMoves = require 'PkScript.moves.getMoves'
-local rngSys = require 'PkScript.RngSystem'
 
 local enemyPidAddress = 0x20243E8
 
