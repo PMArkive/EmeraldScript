@@ -1,36 +1,14 @@
-local seedAddress = 0x3005AE0
-local function readSeed()
-  return memory.readdwordunsigned(seedAddress)
-end
-local function writeSeed(seed)
-  memory.writedword(seedAddress, seed)
-end
-
-
 -- LCG呼び出しを監視してログ等に出力
-local observeLcg = require 'PkScript.LcgObserver'
-
 local logger = (require 'PkScript.Logger')()
-local function printToLog(frame, address)
-  local seed = readSeed()
-  logger.pushright(string.format("%sF,%s,%.8x\n", frame, address, seed))
-end
-
-local addressDict = (require 'PkScript.AddressDict')("./PkScript/AddressList_Em.txt")
-local function printLcgEvent(frame, address)
-  local seed = readSeed()
-  local record = addressDict.get(address)
-  print(string.format("%sF seed: %#.8x %s %s", frame, seed, address, record or "???unknown???"))
-end
-
+local observeLcg = require 'PkScript.LcgObserver'
 observeLcg(0x0806f050, {
-  printToLog,
-  printLcgEvent,
+  (require 'PkScript.LcgListeners.printToLog')(logger),
+  (require 'PkScript.LcgListeners.printToConsole'),
 })
 
 -- 通常乱数列のほかに稀に使われる代替LCGの監視
-local observeAltLcg = require 'PkScript.AltLcgObserver'
-observeAltLcg()
+    (require 'PkScript.AltLcgObserver')()
+
 
 -- LCG呼び出しにフックしてレジスタを書き換えるチート
 local cheat = require 'PkScript.Cheat'
@@ -39,9 +17,9 @@ cheat.encounter("none")
 
 
 -- その他、便利モジュール群
-local LCG = require 'PkScript.Lcg'
 local moveNames = require 'PkScript.moves.moveJP'
 local getMoves = require 'PkScript.moves.getMoves'
+local rngSys = require 'PkScript.RngSystem'
 
 local enemyPidAddress = 0x20243E8
 
@@ -53,7 +31,7 @@ local prev = input.get()
 local now = {}
 while true do
   gui.text(0, 75, vba.framecount() .. "F")
-  gui.text(0, 85, string.format("Seed: %8X", readSeed()))
+  gui.text(0, 85, string.format("Seed: %8X", rngSys.readSeed()))
   -- gui.text(0, 95, string.format("PID: %8X", memory.readdwordunsigned(enemyPidAddress)))
   -- gui.text(0, 105, string.format("Route %d", 100 + memory.readbyte(0x0203B953)-0xF))
 
@@ -75,13 +53,11 @@ while true do
 
   -- LCGの手動更新
   if now['D'] and not prev['D'] then
-    local seed = LCG.advance(readSeed())
-    writeSeed(seed)
+    local seed = rngSys.advance()
     print(string.format("Advance currentSeed: %08x", seed))
   end
   if now['A'] and not prev['A'] then
-    local seed = LCG.back(readSeed())
-    writeSeed(seed)
+    local seed = rngSys.back()
     print(string.format("Back currentSeed: %08x", seed))
   end
 
