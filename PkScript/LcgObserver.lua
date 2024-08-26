@@ -1,14 +1,14 @@
-return function(lcgAddress, listeners)
+return function(lcgAddress, options)
   local function onCallLcg()
-    -- 毎フレーム発生する描画消費・戦闘画面の消費は無視する
     local lr = memory.getregister("r14") - 5
-    local frequent = lr == 0x080386ea or lr == 0x080007ba
-    if frequent then return end
+    for _, ex in pairs(options.exclude) do
+      if lr == ex then return end
+    end
 
     local frame = vba.framecount()
     local address = string.format("$%.8x", lr)
 
-    for _, f in pairs(listeners) do
+    for _, f in pairs(options.listeners) do
       f(frame, address)
     end
   end

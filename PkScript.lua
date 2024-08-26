@@ -2,12 +2,29 @@
 local logger = (require 'PkScript.Logger')()
 local observeLcg = require 'PkScript.LcgObserver'
 observeLcg(0x0806f050, {
-  (require 'PkScript.LcgListeners.printToLog')(logger),
-  (require 'PkScript.LcgListeners.printToConsole'),
+  exclude = {
+    0x080007ba, -- 描画消費
+    0x080386ea, -- 戦闘消費
+  },
+  listeners = {
+    (require 'PkScript.LcgListeners.printToLog')(logger),
+    (require 'PkScript.LcgListeners.printToConsole'),
+  }
 })
 
 -- 通常乱数列のほかに稀に使われる代替LCGの監視
-    (require 'PkScript.AltLcgObserver')()
+local altSeedAddress = 0x03005AE4
+observeLcg(0x0806f0a4, {
+  exclude = {
+    0x080109bc, -- 用途不明
+  },
+  listeners = {
+    function(frame, address)
+      local seed = memory.readdwordunsigned(altSeedAddress)
+      print(string.format("%sF alt %s %s", frame, address, seed))
+    end
+  }
+})
 
 
 -- LCG呼び出しにフックしてレジスタを書き換えるチート
