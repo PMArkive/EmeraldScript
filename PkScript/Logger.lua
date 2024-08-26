@@ -35,6 +35,7 @@ return function()
 
     list.save = function()
         if list.filename == "" then
+            ---@diagnostic disable-next-line: param-type-mismatch
             local date = string.gsub(string.gsub(string.gsub(os.date(), "/", ""), ":", ""), " ", "_")
             list.filename = string.format("./Log/Log %s.txt", date)
             local f = io.open(list.filename, "a")
@@ -44,14 +45,14 @@ return function()
 
         local len = list.last - list.first
         if len > 0 then
-          local f = io.open(list.filename, "a")
-          local message
-          for i=0, len do
-            message = list.popleft()
-            f:write(message)
-          end
-          print("Write Log")
-          f:close()
+            local f = io.open(list.filename, "a")
+            local message
+            for _ = 0, len do
+                message = list.popleft()
+                f:write(message)
+            end
+            print("Write Log")
+            f:close()
         end
     end
 

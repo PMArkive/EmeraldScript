@@ -1,0 +1,15 @@
+{
+  "Lua.diagnostics.globals": [
+    "memory",
+    "input",
+    "vba",
+    "gui",
+    "emu",
+    "bit"
+  ],
+  "Lua.diagnostics.disable": [
+    "need-check-nil"
+  ],
+  "editor.formatOnSave": true,
+  "files.insertFinalNewline": true
+}
