@@ -1,15 +1,18 @@
-local seedAddress = 0x03005AE0
-local rngSys = (require 'PkScript.RngSystem')(seedAddress)
+-- 使うROMのバージョンを指定
+
+local constants = (require "PkScript.Version")["EmJp"]
+local addressListFile = "./PkScript/AddressList_Em.txt"
+
+--
+
+local rngSys = (require 'PkScript.RngSystem')(constants.seedAddress)
 
 -- LCG呼び出しを監視してログ等に出力
 local logger = (require 'PkScript.Logger')()
-local addressDict = (require 'PkScript.AddressDict')("./PkScript/AddressList_Em.txt")
+local addressDict = (require 'PkScript.AddressDict')(addressListFile)
 local observeLcg = require 'PkScript.LcgObserver'
-observeLcg(0x0806f050, {
-  exclude = {
-    0x080007ba, -- 描画消費
-    0x080386ea, -- 戦闘消費
-  },
+observeLcg(constants.lcgFnAddress, {
+  exclude = constants.lcgExcludeAddresses,
   listeners = {
     (require 'PkScript.LcgListeners.printToLog')(rngSys, logger),
     (require 'PkScript.LcgListeners.printToConsole')(rngSys, addressDict),
@@ -17,14 +20,11 @@ observeLcg(0x0806f050, {
 })
 
 -- 通常乱数列のほかに稀に使われる代替LCGの監視
-local altSeedAddress = 0x03005AE4
-observeLcg(0x0806f0a4, {
-  exclude = {
-    0x080109bc, -- 用途不明
-  },
+observeLcg(constants.altLcgFnAddress, {
+  exclude = constants.altLcgEdcludeAddresses,
   listeners = {
     function(frame, address)
-      local seed = memory.readdwordunsigned(altSeedAddress)
+      local seed = memory.readdwordunsigned(constants.altSeedAddress)
       print(string.format("%sF alt %s %s", frame, address, seed))
     end
   }
@@ -40,8 +40,6 @@ cheat.encounter("none")
 -- その他、便利モジュール群
 local moveNames = require 'PkScript.moves.moveJP'
 local getMoves = require 'PkScript.moves.getMoves'
-
-local enemyPidAddress = 0x20243E8
 
 -- local feebas = 0x020388a4
 
@@ -61,7 +59,7 @@ while true do
   end
 
   if now['M'] and not prev['M'] then
-    local moves = getMoves(enemyPidAddress, 0)
+    local moves = getMoves(constants.enemyPidAddress, 0)
     print(string.format("%s/%s/%s/%s", moveNames[moves[1]] or "", moveNames[moves[2]] or "", moveNames[moves[3]] or "",
       moveNames[moves[4]] or ""))
   end
